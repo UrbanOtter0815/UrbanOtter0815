@@ -1,0 +1,15 @@
+#!/bin/sh
+
+printf "\033[37mWorld time:\033[0m\n"
+printf "Bucharest     : "; TZ=Europe/Bucharest date +"%d.%m.%Y %H:%M"
+printf "Berlin        : "; TZ=Europe/Berlin date +"%d.%m.%Y %H:%M"
+printf "Madrid        : "; TZ=Europe/Madrid date +"%d.%m.%Y %H:%M"
+printf "London        : "; TZ=Europe/London date +"%d.%m.%Y %H:%M"
+printf "New York      : "; TZ=America/New_York date +"%d.%m.%Y %H:%M"
+printf "Denver        : "; TZ=America/Denver date +"%d.%m.%Y %H:%M"
+printf "Redwood Shores: "; TZ=America/Los_Angeles date +"%d.%m.%Y %H:%M"
+printf "Tokyo         : "; TZ=Asia/Tokyo date +"%d.%m.%Y %H:%M"
+printf "Hong Kong     : "; TZ=Asia/Hong_Kong date +"%d.%m.%Y %H:%M"
+printf "Mumbai        : "; TZ=Asia/Kolkata date +"%d.%m.%Y %H:%M"
+printf "Moscow        : "; TZ=Europe/Moscow date +"%d.%m.%Y %H:%M"
+printf "Auckland      : "; TZ=Pacific/Auckland date +"%d.%m.%Y %H:%M"

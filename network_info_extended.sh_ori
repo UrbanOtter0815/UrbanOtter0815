@@ -1,0 +1,172 @@
+#!/bin/sh
+
+###############################################################################
+# Optimized Network Information Script for macOS
+# 
+# This script retrieves and displays detailed network information for all 
+# network interfaces on a macOS system. It includes functionality to list 
+# network ports, retrieve manufacturer information linked to MAC addresses, 
+# convert subnet masks to CIDR notation, and check VPN status.
+#
+# Author: Optimized Version
+# Date: January 27, 2025
+###############################################################################
+
+# Define the directory for the OUI file (to retrieve MAC address manufacturers)
+ouidir="/var/lib/ieee-data"  # Ensure this directory exists and contains oui.txt
+
+# Function: mask2cdr
+# Converts an IP subnet mask to CIDR notation
+mask2cdr () {
+    local x=${1##*255.}
+    set -- 0^^^128^192^224^240^248^252^254^ $(( (${#1} - ${#x})*2 )) ${x%%.*}
+    x=${1%%$3*}
+    echo $(( $2 + (${#x}/4) ))
+}
+
+
+function statusvpn () {
+    # check_vpn:        Check if VPN is active
+    # Example usage
+    # check_vpn && exit 1
+
+    vpn_interfaces=$(ifconfig -a | grep -E '^(utun|tun|ppp)')     # Check for active utun, tun, or ppp interfaces
+
+    # Use scutil to verify network interface information
+    scutil_output=$(scutil --nwi)
+
+    # Check if any VPN-related interfaces are actually in use
+    vpn_active=$(echo "$scutil_output" | grep -E 'utun|tun|ppp')
+
+    if [[ -n "$vpn_interfaces" && -n "$vpn_active" ]]; then
+        echo "Connected"
+        return 0
+    else
+        echo "Disconnected"
+        return 1
+    fi
+}
+
+function max_speed () {
+    # max_speed:        Function to monitor network bandwidth usage for a specified network interface.
+    #
+    # Example usage
+    # max_speed en0
+
+    # Set the network interface to the argument provided, or use 'en0' as the default.
+    local INTERFACE=${1:-en0}
+
+    # Check if the specified network interface exists
+    if ! ifconfig "$INTERFACE" >/dev/null 2>&1; then
+        echo "Error: Network interface '$INTERFACE' does not exist."
+        return 1
+    fi
+
+    # Function to get byte counts for the specified network interface
+    get_sample() {
+        /usr/sbin/netstat -bI "$INTERFACE" 2>/dev/null | awk "/$INTERFACE/"'{print $7" "$10; exit}'
+    }
+
+    # Collect the first sample of incoming and outgoing bytes
+    local SAMPLE_A=($(get_sample))
+    sleep 1
+    # Collect the second sample of incoming and outgoing bytes
+    local SAMPLE_B=($(get_sample))
+
+    # Check if samples were successfully retrieved
+    if [[ -z "${SAMPLE_A[0]}" || -z "${SAMPLE_B[0]}" ]]; then
+        echo "Error: Unable to fetch data for interface $INTERFACE."
+        return 1
+    fi
+
+    # Calculate bandwidth in megabits per second (mb/s)
+    # Formula: ((bytes at SAMPLE_B - bytes at SAMPLE_A) * 8) / (1_048_576) => Convert bytes to megabits
+    local IN=$(echo "scale=2; (${SAMPLE_B[0]} - ${SAMPLE_A[0]}) * 8 / 1048576" | bc)
+    local OUT=$(echo "scale=2; (${SAMPLE_B[1]} - ${SAMPLE_A[1]}) * 8 / 1048576" | bc)
+
+    # Display the bandwidth usage
+    echo -e "Network in: ${IN} mb/s, out: ${OUT} mb/s"
+}
+
+echo "\033[0m\033[37mNetwork info:\033[0m"
+
+# Check for active VPN connection
+state=$(statusvpn)
+
+# Check for active VPN connection
+if [[ $state = "Connected" ]]; then
+    vpn_status="VPN active!"
+    remoteip="No remote IP available"
+else
+    vpn_status="VPN not active!"
+    remoteip=$(dig +short +time=2 myip.opendns.com @resolver1.opendns.com | awk '{print $1}')
+fi
+
+echo "  VPN Status:   $vpn_status"
+
+# Get public/remote IP address (using OpenDNS)
+echo "  Remote IP:    $remoteip"
+echo ""
+
+# Retrieve all active network interfaces
+NetworkPorts=$(ifconfig -uv | grep '^[a-z0-9]' | awk -F : '{print $1}')
+
+# Process each network interface
+for val in $NetworkPorts; do
+    ifconfig_output=$(ifconfig -uv "$val")
+
+    # Extract basic details from ifconfig output
+    activated=$(echo "$ifconfig_output" | grep 'status: ' | awk '{print $2}')
+    ipaddress=$(echo "$ifconfig_output" | grep 'inet ' | awk '{print $2}')
+    macaddress=$(echo "$ifconfig_output" | grep 'ether ' | awk '{print $2}')
+    quality=$(echo "$ifconfig_output" | grep 'link quality:' | awk '{print $3, $4}')
+    #networkspeed=$(echo "$ifconfig_output" | grep 'link rate:' | awk '{print $3, $4}' | sed 'N;s/\n/ up /')
+    #read IN OUT < <(max_speed "$val")
+
+
+    # Retrieve manufacturer from OUI file (line-by-line lookup)
+    # FILE_URL="https://standards-oui.ieee.org/oui/oui.txt"
+    noui=$(echo ${macaddress:0:8} | sed 's/://g')
+    if [ -f "$ouidir/oui.txt" ]; then
+        macal=$(grep -i "$noui" "$ouidir/oui.txt" | cut -d')' -f2 | tr -d '\t' | tr -d '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        macal=${macal:-"N/A"}
+    else
+        macal="N/A"
+    fi
+
+    # Retrieve additional details using ipconfig and netstat
+    netmask=$(ipconfig getpacket "$val" 2>/dev/null | grep 'subnet_mask (ip):' | awk '{print $3}')
+    router=$(ipconfig getpacket "$val" 2>/dev/null | grep 'router (ip_mult):' | sed 's/.*router (ip_mult): {\([^}]*\)}.*/\1/')
+    
+    if [[ $state = "Connected" ]]; then
+        dnsserver="8.8.8.8"
+    else
+        dnsserver=$(awk '/nameserver/ {print $2}' /etc/resolv.conf)
+    fi
+
+    # Calculate traffic statistics in MB
+    #netstat_output=$(netstat -ib -I "$val")
+    myvar1=$(netstat -ib -I "$val" | grep -e "$val" -m 1 | awk '{print $7}')
+    myvar2=$(netstat -ib -I "$val" | grep -e "$val" -m 1 | awk '{print $10}')
+    myvar1=${myvar1:-0}  # Default to 0 if empty
+    myvar2=${myvar2:-0}  # Default to 0 if empty
+    kbin=$(printf "%'.2f" "$(bc <<< "scale=2; $myvar1/1024/1024")")
+    kbout=$(printf "%'.2f" "$(bc <<< "scale=2; $myvar2/1024/1024")")
+
+    # Output details for active interfaces only
+    if [ "$activated" = "active" ] && [[ -n "$ipaddress" ]]; then
+        echo "\033[0m\033[37mInterface: $val\033[0m"
+        echo "  IP Address:   $ipaddress"
+        echo "  Subnet Mask:  ${netmask:-Unknown}"s
+        echo "  Router:       ${router:-Unknown}"
+        echo "  IP CIDR:      ${ipaddress}/$(mask2cdr ${netmask:-255.255.255.0})"
+        echo "  DNS Server:   ${dnsserver:-Unknown}"
+        echo "  MAC Address:  $macaddress ($macal)"
+        echo "  Link Quality: ${quality:-Unknown}"
+        echo "  Speed:        ${networkspeed:-Unknown}"
+        echo "  Traffic:      In: ${kbin} MB, Out: ${kbout} MB"
+        echo ""
+    fi
+done
+
+exit 0

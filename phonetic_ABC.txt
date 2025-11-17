@@ -1,0 +1,19 @@
+Phonetic Alphabet NATO / DE
+-----------------------------------------------------------
+       NATO      DE           |       NATO      DE
+------------------------------+----------------------------
+  A    Alpha     Anton        |  O    Oscar     Otto
+  Ä              Ärger        |  Ö              Ökonom
+  B    Bravo     Berta        |  P    Papa      Paula
+  C    Charlie   Cäsar        |  Q    Quebec    Quelle
+  D    Delta     Dora         |  R    Romeo     Richard
+  E    Echo      Emil         |  S    Sierra    Siegfried
+  F    Foxtrot   Friedrich    |  Sch            Schule
+  G    Golf      Gustav       |  T    Tango     Theodor
+  H    Hotel     Heinrich     |  U    Uniform   Ulrich
+  I    India     Ida          |  Ü              Übel
+  J    Juliett   Julius       |  V    Victor    Viktor
+  K    Kilo      Kaufmann     |  W    Whiskey   Wilhelm
+  L    Lima      Ludwig       |  X    X-ray     Xaver
+  M    Mike      Martha       |  Y    Yankee    Ypsilon
+  N    November  Nordpol      |  Z    Zulu      Zeppelin

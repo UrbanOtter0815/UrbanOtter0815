@@ -1,0 +1,22 @@
+/Users/stebbele/Scripts/Geektool/system_top.sh 
+echo
+/Users/stebbele/Scripts/Geektool/free.sh -m
+echo
+/Users/stebbele/Scripts/Geektool/power_stats.sh 
+echo
+/Users/stebbele/Scripts/Geektool/system_info.sh 
+echo
+/Users/stebbele/Scripts/Geektool/network_stats.sh
+echo
+/Users/stebbele/Scripts/Geektool/system_health.sh
+
+----
+/Users/stebbele/Scripts/Geektool/system_info.sh 
+echo
+/Users/stebbele/Scripts/Geektool/system_health.sh
+echo
+/Users/stebbele/Scripts/Geektool/system_top.sh 
+echo
+/Users/stebbele/Scripts/Geektool/power_stats.sh 
+echo
+/Users/stebbele/Scripts/Geektool/network_stats.sh
