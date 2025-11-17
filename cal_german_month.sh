@@ -5,7 +5,7 @@
 #               and gcal utilities, with highlights and week numbers.
 # Usage       : ./calendar_output.sh
 # Dependencies: gcal (from Homebrew), locale de_DE, standard /bin/sh, awk, cal
-# Author      : [Your Name]
+# Author      : Stephan Stumpf
 # Date        : 2025-11-17
 ###############################################################################
 
